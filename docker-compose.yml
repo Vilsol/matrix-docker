@@ -1,0 +1,44 @@
+version: '2'
+
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    restart: unless-stopped
+    environment:
+      - SYNAPSE_SERVER_NAME=YOUR_DOMAIN
+      - SYNAPSE_REPORT_STATS=no
+      - SYNAPSE_ENABLE_REGISTRATION=yes
+      - POSTGRES_PASSWORD=CHANGE_DEFAULT_PASSWORD
+      - SYNAPSE_NO_TLS=1
+    volumes:
+      - ./matrix-data:/data
+    links:
+      - db
+    labels:
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:YOUR_DOMAIN
+      - traefik.port=8008
+    logging:
+      options:
+        max-size: "1M"
+        max-file: "10"
+
+  db:
+    image: postgres:10-alpine
+    environment:
+      - POSTGRES_USER=synapse
+      - POSTGRES_PASSWORD=CHANGE_DEFAULT_PASSWORD
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+  traefik:
+    image: traefik
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      # - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik-data/traefik.toml:/traefik.toml
+      - ./traefik-data/acme.json:/acme.json
